@@ -1,20 +1,37 @@
 Easily building NS with VNFs including Juju Charms
 ==================================================
 
+
 1. Put VNFDs and NSDs into main directory.
+
 
 2. Put Juju Charms into "juju".
 - Charms will be build automatically.
 - If referenced by a VNF, a built charm will be copied during VNF build.
 
-3. Run CMake
+
+3. Put Python helper files into "vduhelper".
+The files will be copied to <charm>/reactive/ during charm build.
+
+
+4. Run CMake
 cmake .
 
-4. Run Make
 
+5. Run Make
+
+# To utilise multiple cores (highly usefor for charm builds!):
 cores=`getconf _NPROCESSORS_ONLN 2>/dev/null || true`
 if [ $cores -gt 1 ] ; then
    export MAKEFLAGS=-j${cores}
 fi
 
 make
+
+
+5. Instantiate NS
+
+Important:
+In the YAML file, "#! NSD <NS name>" references the NS name to ensure it gets built!
+
+./create-ns <yaml-file>
