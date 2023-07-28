@@ -1,0 +1,134 @@
+#!/bin/bash -e
+# =====================================================================
+#     #######  #####          #     #   ###   #     # #     #   ###
+#     #       #     #         #     #    #    ##    # ##    #    #
+#     #       #               #     #    #    # #   # # #   #    #
+#      #####  #  ####  #####  #     #    #    #  #  # #  #  #    #
+#           # #     #          #   #     #    #   # # #   # #    #
+#     #     # #     #           # #      #    #    ## #    ##    #
+#      #####   #####             #      ###   #     # #     #   ###
+# =====================================================================
+#
+# SimulaMet OpenAirInterface Evolved Packet Core VNF and NS
+# Copyright (C) 2019-2023 by Thomas Dreibholz
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Contact: dreibh@simula.no
+
+# ###### Print usage ########################################################
+PROGRAM="$0"
+VIM_ACCOUNT="simulamet-openstack"
+function usage()
+{
+   echo >&2 "Usage: ${PROGRAM} parameter-file [parameter-file ...]"
+   echo >&2 ""
+   echo >&2 "Available parameter files in this directory:"
+   parameterFiles=`git ls-files | cut -d/ -f1 | sort -u | grep -- ".yaml"`
+   for parameterFile in ${parameterFiles} ; do
+      echo >&2 " * ${parameterFile}"
+   done
+}
+
+
+# ###### Main program #######################################################
+if [ $# -lt 1 ] ; then
+   usage
+   exit 0
+fi
+n=0
+while [ $# -gt 0 ] ; do
+   # ====== Get parameter file ==============================================
+   PARAMS="$1"
+   if [ ! -e "${PARAMS}" ] ; then
+      echo >&2 "ERROR: Parameter file ${PARAMS} not found!"
+      usage
+      exit 1
+   fi
+
+   # ====== Extract NSD name from parameter file ============================
+   NSD=`grep -E '#! NSD ' ${PARAMS} | cut -d' ' -f3`
+   if [ "${NSD}" == "" ] ; then
+      echo >&2 "ERROR: The parameter file does not mention the NSD name! (#! NSD <name>)"
+      exit 1
+   fi
+   NS=`echo "${PARAMS}" | sed -e "s/.yaml$//g"`
+   if [ ! -d "${NSD}" ] ; then
+      NSD=`echo "${NS}" | sed -e "s/-[a-zA-Z0-9]*$/_nsd/g"`
+      if [ ! -d "${NSD}" ] ; then
+        echo >&2 "ERROR: NSD ${NSD} not found!"
+        usage
+        exit 1
+     fi
+   fi
+   VNFDs=`grep "vnfd-id:" ${NSD}/${NSD}.yaml | sed -e "s/^.*://g" | sort -u | xargs`
+
+   echo "NS=$NS NSD=$NSD VNFDs=$VNFDs PARAMS=$PARAMS"
+
+
+   # ====== Build ===========================================================
+   if [ $n -eq 0 ] ; then
+      echo -e "\x1b[34m`date +%FT%H:%M:%S`: Building ...\x1b[0m"
+      cmake .
+      make
+   fi
+
+
+   # ====== Clean up ========================================================
+   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Deleting existing setup ${NS} ...\x1b[0m"
+   osm ns-delete --wait ${NS} || true
+   osm nsd-delete ${NSD} || true
+   for vnfd in ${VNFDs} ; do
+      osm vnfd-delete ${vnfd} || true
+   done
+
+   # ====== Create ==========================================================
+   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Creating ${VNFDs} and ${NSD} ...\x1b[0m"
+   for vnfd in ${VNFDs} ; do
+      osm vnfd-create ${vnfd}.tar.gz || true
+   done
+   osm nsd-create ${NSD}.tar.gz || true
+
+
+   # ====== Instantiate =====================================================
+   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Instantiating ${NS} ...\x1b[0m"
+   if [ -e ${PARAMS} ] ; then
+      config_file_option=" --config_file ${PARAMS}"
+   else
+      echo >&2 "WARNING: No configuration file ${PARAMS} found!"
+      config_file_option=""
+   fi
+   osm ns-create \
+      --ns_name ${NS} \
+      --nsd_name ${NSD} \
+      ${config_file_option} \
+      --vim_account ${VIM_ACCOUNT} \
+      --ssh_keys ~/.ssh/osm-user.pub
+   # --config '{vld: [ {name: mgmtnet, vim-network-name: osm-ext} ] }'
+
+
+   # ====== Done! ===========================================================
+   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Done!\x1b[0m"
+
+   # osm ns-list --filter=name=${NS}
+   id=`osm ns-list --filter=name=${NS} | grep "| ${NS}" | awk '{ print $4 }'`
+   echo "ID=${id}"
+   sleep 15
+   echo "juju switch ${id}"
+   juju switch ${id}
+
+
+   shift
+   let n=$n+1
+done

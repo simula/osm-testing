@@ -1,0 +1,63 @@
+vnfd:
+  description: A basic VNF descriptor w/ one VDU
+  df:
+  - id: default-df
+    instantiation-level:
+    - id: default-instantiation-level
+      vdu-level:
+      - number-of-instances: 1
+        vdu-id: hackfest_basic-VM
+    vdu-profile:
+    - id: hackfest_basic-VM
+      min-number-of-instances: 1
+  ext-cpd:
+  - id: vnf-cp0-ext
+    int-cpd:
+      cpd: vdu-eth0-int
+      vdu-id: hackfest_basic-VM
+  id: hackfest_basic-vnf
+  mgmt-cp: vnf-cp0-ext
+  product-name: hackfest_basic-vnf
+  sw-image-desc:
+  - id: ubuntu18.04
+    name: ubuntu18.04
+    image: ubuntu18.04
+  - id: ubuntu18.04-aws
+    name: ubuntu18.04-aws
+    image: ubuntu/images/hvm-ssd/ubuntu-artful-17.10-amd64-server-20180509
+    vim-type: aws
+  - id: ubuntu18.04-azure
+    name: ubuntu18.04-azure
+    image: Canonical:UbuntuServer:18.04-LTS:latest
+    vim-type: azure
+  - id: ubuntu18.04-gcp
+    name: ubuntu18.04-gcp
+    image: ubuntu-os-cloud:image-family:ubuntu-1804-lts
+    vim-type: gcp
+  vdu:
+  - id: hackfest_basic-VM
+    name: hackfest_basic-VM
+    sw-image-desc: ubuntu18.04
+    alternative-sw-image-desc:
+    - ubuntu18.04-aws
+    - ubuntu18.04-azure
+    - ubuntu18.04-gcp
+    virtual-compute-desc: hackfest_basic-VM-compute
+    virtual-storage-desc:
+    - hackfest_basic-VM-storage
+    int-cpd:
+    - id: vdu-eth0-int
+      virtual-network-interface-requirement:
+      - name: vdu-eth0
+        virtual-interface:
+          type: PARAVIRT
+  version: 1.0
+  virtual-compute-desc:
+  - id: hackfest_basic-VM-compute
+    virtual-cpu:
+      num-virtual-cpu: 1
+    virtual-memory:
+      size: 1.0
+  virtual-storage-desc:
+  - id: hackfest_basic-VM-storage
+    size-of-storage: 10
