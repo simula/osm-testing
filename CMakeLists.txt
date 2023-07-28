@@ -31,7 +31,7 @@
 # INITIALISE
 #############################################################################
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0.2)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 PROJECT(SimulaMet-OAI-EPC C)
 
 
@@ -59,6 +59,23 @@ EXECUTE_PROCESS(COMMAND git ls-files
                 COMMAND sed -e "s/;$//g"
                 OUTPUT_VARIABLE VNFD_LIST OUTPUT_STRIP_TRAILING_WHITESPACE)
 MESSAGE("VNFDs: ${VNFD_LIST}")
+
+# ------ Obtaining a mapping between VNFD directory and VNFD identifier =====
+MESSAGE("VNFD check:")
+FOREACH(vnfd IN LISTS VNFD_LIST)
+   IF (EXISTS "${vnfd}/${vnfd}.yaml")
+     SET(vnfdYamlName "${vnfd}/${vnfd}.yaml")
+   ELSEIF (EXISTS "${vnfd}/${vnfd}d.yaml")
+     SET(vnfdYamlName "${vnfd}/${vnfd}d.yaml")
+   ELSE()
+      MESSAGE(FATAL_ERROR "Unable to find YAML file for ${vnfd}")
+   ENDIF()
+   EXECUTE_PROCESS(COMMAND grep "^  id:" ${vnfdYamlName}
+                   COMMAND tr -d " \t\n"
+                   COMMAND sed -e "s/id://"
+                   OUTPUT_VARIABLE ${vnfd}_Identifier)
+   MESSAGE(" * ${vnfd} (ID: ${${vnfd}_Identifier})")
+ENDFOREACH()
 
 
 # ====== Obtain list of all Charms ==========================================
@@ -113,35 +130,18 @@ FOREACH(nsd IN LISTS NSD_LIST)
    # ====== Find the dependency VNFDs =======================================
    SET(${nsd}_vnfds "")
    FOREACH(vnfDependency IN LISTS vnfDependencies)
-      IF (NOT EXISTS "${vnfDependency}")
-         # ====== Get ID of the VNFD from its YAML file =====================
-         SET(found 0)
-         FOREACH(vnfd IN LISTS VNFD_LIST)
-            IF (EXISTS "${vnfd}/${vnfd}.yaml")
-               SET(vnfdYamlName "${vnfd}/${vnfd}.yaml")
-            ELSEIF (EXISTS "${vnfd}/${vnfd}d.yaml")
-               SET(vnfdYamlName "${vnfd}/${vnfd}d.yaml")
-            ELSE()
-               MESSAGE(FATAL_ERROR "Unable to find YAML file for ${vnfd}")
-            ENDIF()
-            EXECUTE_PROCESS(COMMAND grep "^[ ]*id:" ${vnfdYamlName}
-                            COMMAND tr -d " \t\n"
-                            COMMAND sed -e "s/id://"
-                            OUTPUT_VARIABLE vnfdIdentifier)
-            IF ("${vnfdIdentifier}" STREQUAL "${vnfDependency}")
-               LIST(APPEND ${nsd}_vnfds ${vnfd})
-               SET(found 1)
-               BREAK()
-            ENDIF()
-         ENDFOREACH()
-         IF (NOT ${found})
-            MESSAGE(FATAL_ERROR "There is no VNFD directory for ${vnfDependency}!")
+      SET(found 0)
+      FOREACH(vnfd IN LISTS VNFD_LIST)
+         IF ("${${vnfd}_Identifier}" STREQUAL "${vnfDependency}")
+            LIST(APPEND ${nsd}_vnfds ${vnfd})
+            SET(found 1)
+            BREAK()
          ENDIF()
-      ELSE()
-         LIST(APPEND ${nsd}_vnfds ${vnfDependency})
+      ENDFOREACH()
+      IF (NOT ${found})
+         MESSAGE(FATAL_ERROR "There is no VNFD for ${vnfDependency}!")
       ENDIF()
    ENDFOREACH()
-
 
    MESSAGE("VNFD dependencies of NSD ${nsd}: ${${nsd}_vnfds}")
 ENDFOREACH()
@@ -252,15 +252,13 @@ FOREACH(charmName IN LISTS CHARM_SOURCE_LIST)
    makeUniqueTarget(generate_charmBuildTimestampFile "generate_charm_${charmName}")
    SET(charmBuildTimestampFile "${charmBuildDirectory}.stamp")
    ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
-                      COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}
+                      COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
                       COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
                       COMMAND rm -rf ${charmBuildDirectory}
                       COMMAND pwd
-                      COMMAND echo env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
+                      COMMAND echo "env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}"
                       COMMAND env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
-                      # FIXME!
-                      # COMMAND sed -e "/trusty/d" -e "/xenial/d" -i ${charmsOutputDirectory}/${charmName}/metadata.yaml
-                      # COMMAND sed -e "s#^import shlex#import shlex\\\\nimport traceback#g" -i ${charmBuildDirectory}/lib/charms/sshproxy.py
+                      COMMAND echo "---"
                       COMMAND touch ${charmBuildTimestampFile}
                       WORKING_DIRECTORY ${charmSourceDirectory}
                       DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})

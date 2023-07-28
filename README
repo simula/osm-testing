@@ -1,0 +1,20 @@
+Easily building NS with VNFs including Juju Charms
+==================================================
+
+1. Put VNFDs and NSDs into main directory.
+
+2. Put Juju Charms into "juju".
+- Charms will be build automatically.
+- If referenced by a VNF, a built charm will be copied during VNF build.
+
+3. Run CMake
+cmake .
+
+4. Run Make
+
+cores=`getconf _NPROCESSORS_ONLN 2>/dev/null || true`
+if [ $cores -gt 1 ] ; then
+   export MAKEFLAGS=-j${cores}
+fi
+
+make
