@@ -255,6 +255,9 @@ FOREACH(charmName IN LISTS CHARM_SOURCE_LIST)
    # ------ Charm using Operator Mode ---------------------------------------
    IF(EXISTS "${charmSourceDirectory}/mod/operator" AND IS_DIRECTORY "${charmSourceDirectory}/mod/operator")
       MESSAGE("Charm ${charmName} is using Operator Mode!")
+      IF(NOT EXISTS "${charmSourceDirectory}/mod/operator/.git")
+         MESSAGE(FATAL_ERROR "${charmSourceDirectory}/mod/operator/.git does not exist!\nTry: git submodule init && git submodule update")
+      ENDIF()
       ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
                          COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
                          COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
