@@ -1,0 +1,3 @@
+[submodule "juju/simple-native/mod/operator"]
+	path = juju/simple-native/mod/operator
+	url = https://github.com/canonical/operator

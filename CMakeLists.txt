@@ -251,17 +251,32 @@ FOREACH(charmName IN LISTS CHARM_SOURCE_LIST)
 
    makeUniqueTarget(generate_charmBuildTimestampFile "generate_charm_${charmName}")
    SET(charmBuildTimestampFile "${charmBuildDirectory}.stamp")
-   ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
-                      COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                      COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                      COMMAND rm -rf ${charmBuildDirectory}
-                      COMMAND pwd
-                      COMMAND echo "env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}"
-                      COMMAND env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
-                      COMMAND echo "---"
-                      COMMAND touch ${charmBuildTimestampFile}
-                      WORKING_DIRECTORY ${charmSourceDirectory}
-                      DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
+
+   # ------ Charm using Operator Mode ---------------------------------------
+   IF(EXISTS "${charmSourceDirectory}/mod/operator" AND IS_DIRECTORY "${charmSourceDirectory}/mod/operator")
+      ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
+                        COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                        COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                        COMMAND rm -rf ${charmBuildDirectory}
+                        COMMAND cp -a ${charmSourceDirectory} ${charmBuildDirectory}
+                        COMMAND touch ${charmBuildTimestampFile}
+                        WORKING_DIRECTORY ${charmSourceDirectory}
+                        DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
+
+   # ------ Charm using deprecated "charm build" ----------------------------
+   ELSE()
+      ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
+                        COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                        COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                        COMMAND rm -rf ${charmBuildDirectory}
+                        COMMAND pwd
+                        COMMAND echo "env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}"
+                        COMMAND env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
+                        COMMAND echo "---"
+                        COMMAND touch ${charmBuildTimestampFile}
+                        WORKING_DIRECTORY ${charmSourceDirectory}
+                        DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
+   ENDIF()
    ADD_CUSTOM_TARGET(${generate_charmBuildTimestampFile} DEPENDS ${charmBuildTimestampFile})
 
    MESSAGE("Charm to build: ${charmName}")
