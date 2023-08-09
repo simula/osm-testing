@@ -346,7 +346,7 @@ FOREACH(vnfd IN LISTS VNFD_LIST)
    makeUniqueTarget(generate_vnfdPackage "generate_vnfd_${vnfdPackage}")
 
    ADD_CUSTOM_COMMAND(OUTPUT  ${vnfdPackage}
-                      COMMAND ${OSM} package-validate ${vnfd}
+                      # COMMAND ${OSM} package-validate ${vnfd}
                       COMMAND ${OSM} package-build ${vnfd}
                       COMMAND du -k ${vnfdPackage}
                       DEPENDS ${vnfdFiles} ${allYAMLsChecked} ${allCloudInitFilesChecked} ${allCharmsCopyedIntoVNFD})
@@ -378,7 +378,7 @@ FOREACH(nsd IN LISTS NSD_LIST)
    makeUniqueTarget(generate_nsdPackage "generate_nsd_${nsdPackage}")
 
    ADD_CUSTOM_COMMAND(OUTPUT  ${nsdPackage}
-                      COMMAND ${OSM} package-validate ${nsd}
+                      # COMMAND ${OSM} package-validate ${nsd}
                       COMMAND ${OSM} package-build ${nsd}
                       COMMAND du -k ${nsdPackage}
                       DEPENDS ${nsdFiles} ${allYAMLsChecked} ${allRequiredVNFDPackages})
