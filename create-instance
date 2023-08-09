@@ -58,21 +58,29 @@ while [ $# -gt 0 ] ; do
    fi
 
    # ====== Extract NSD name from parameter file ============================
+   NS=`echo "${PARAMS}" | sed -e "s/.yaml$//g"`
    NSD=`grep -E '#! NSD ' ${PARAMS} | cut -d' ' -f3`
    if [ "${NSD}" == "" ] ; then
       echo >&2 "ERROR: The parameter file does not mention the NSD name! (#! NSD <name>)"
       exit 1
    fi
-   NS=`echo "${PARAMS}" | sed -e "s/.yaml$//g"`
    if [ ! -d "${NSD}" ] ; then
-      NSD=`echo "${NS}" | sed -e "s/-[a-zA-Z0-9]*$/_nsd/g"`
-      if [ ! -d "${NSD}" ] ; then
-        echo >&2 "ERROR: NSD ${NSD} not found!"
-        usage
-        exit 1
-     fi
+      usage
+      exit 1
    fi
-   VNFDs=`grep "vnfd-id:" ${NSD}/${NSD}.yaml | sed -e "s/^.*://g" | sort -u | xargs`
+   if [ -e "${NSD}/${NSD}.yaml" ] ; then
+      nsdYamlName="${NSD}/${NSD}.yaml"
+   elif [ -e "${NSD}/${NSD}d.yaml" ] ; then
+      nsdYamlName="${NSD}/${NSD}d.yaml"
+   else
+      echo >&2 "ERROR: Unable to find YAML file for ${NSD}!"
+      exit 1
+   fi   
+   VNFDs=`grep "vnfd-id:" ${nsdYamlName} | sed -e "s/^.*://g" | sort -u | xargs`
+   if [ "{$VNFDs}" == "" ] ; then
+      echo >&2 "ERROR: No VNFD-IDs found for ${NSD}!"
+      exit 1
+   fi
 
    echo "NS=$NS NSD=$NSD VNFDs=$VNFDs PARAMS=$PARAMS"
 
@@ -85,20 +93,20 @@ while [ $# -gt 0 ] ; do
    fi
 
 
-   # ====== Clean up ========================================================
-   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Deleting existing setup ${NS} ...\x1b[0m"
-   osm ns-delete --wait ${NS} || true
-   osm nsd-delete ${NSD} || true
-   for vnfd in ${VNFDs} ; do
-      osm vnfd-delete ${vnfd} || true
-   done
+#   # ====== Clean up ========================================================
+#   echo -e "\x1b[34m`date +%FT%H:%M:%S`: Deleting existing setup ${NS} ...\x1b[0m"
+#   osm ns-delete --wait ${NS} || true
+#   osm nsd-delete ${NSD} || true
+#   for vnfd in ${VNFDs} ; do
+#      osm vnfd-delete ${vnfd} || true
+#   done
 
-   # ====== Create ==========================================================
+   # ====== Create/Update ===================================================
    echo -e "\x1b[34m`date +%FT%H:%M:%S`: Creating ${VNFDs} and ${NSD} ...\x1b[0m"
    for vnfd in ${VNFDs} ; do
-      osm vnfd-create ${vnfd}.tar.gz || true
+      osm vnfd-create ${vnfd}.tar.gz || osm vnfd-update ${vnfd}.tar.gz
    done
-   osm nsd-create ${NSD}.tar.gz || true
+   osm nsd-create ${NSD}.tar.gz || osm nsd-update ${NSD}.tar.gz
 
 
    # ====== Instantiate =====================================================
@@ -115,7 +123,7 @@ while [ $# -gt 0 ] ; do
       ${config_file_option} \
       --vim_account ${VIM_ACCOUNT} \
       --ssh_keys ~/.ssh/osm-user.pub
-   # --config '{vld: [ {name: mgmtnet, vim-network-name: osm-ext} ] }'
+      # --config '{vld: [ {name: mgmtnet, vim-network-name: openstack-vms} ] }'
 
 
    # ====== Done! ===========================================================

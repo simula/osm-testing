@@ -1,0 +1,6 @@
+# The following line tells "create-instance" the name of the NSD:
+#! NSD native_charm_ns
+
+vld:
+  - name: mgmtnet
+    vim-network-name: openstack-vms
