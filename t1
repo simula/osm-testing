@@ -1,0 +1,59 @@
+#!/bin/bash
+
+
+# ====== Obtain list of all NSDs ===========================================
+NSD_LIST=`git ls-files | cut -d/ -f1 | sort -u | grep "nsd$\\|ns$"`
+
+# ------ Obtaining a mapping between NSD directory and NSD identifier =====
+declare -A nsdIdentifierArray
+declare -A nsdArray
+declare -A nsdYamlFileArray
+for nsd in ${NSD_LIST} ; do
+   echo "$nsd:"
+   if [ -e "${nsd}/${nsd}.yaml" ] ; then
+      nsdYamlName="${nsd}/${nsd}.yaml"
+   elif [ -e "${nsd}/${nsd}d.yaml" ] ; then
+      nsdYamlName="${nsd}/${nsd}d.yaml"
+   else
+      echo >&2 "ERROR: Unable to find YAML file for ${nsd}!"
+      exit 1
+   fi
+   nsdIdentifier=`grep "^    id:" ${nsdYamlName} | tr -d " \t\n" | sed -e "s/id://"`
+   if [ "${nsdIdentifier}" == "" ] ; then
+      echo >&2 "ERROR: Unable to find identifier for NSD ${nsd}!"
+      exit 1
+   fi
+   nsdIdentifierArray[${nsd}]="${nsdIdentifier}"
+   nsdYamlFileArray[${nsd}]="${nsdYamlName}"
+   nsdArray[${nsdIdentifier}]="${nsd}"
+
+   echo "${nsdArray[${nsdIdentifier}]} <-> ${nsdIdentifierArray[${nsd}]}"
+done
+
+
+# ====== Obtain list of all VNFDs ===========================================
+VNFD_LIST=`git ls-files | cut -d/ -f1 | sort -u | grep "vnfd$\\|vnf$"`
+
+# ------ Obtaining a mapping between VNFD directory and VNFD identifier =====
+declare -A vnfdIdentifierArray
+declare -A vnfdArray
+for vnfd in ${VNFD_LIST} ; do
+   echo "$vnfd:"
+   if [ -e "${vnfd}/${vnfd}.yaml" ] ; then
+      vnfdYamlName="${vnfd}/${vnfd}.yaml"
+   elif [ -e "${vnfd}/${vnfd}d.yaml" ] ; then
+      vnfdYamlName="${vnfd}/${vnfd}d.yaml"
+   else
+      echo >&2 "ERROR: Unable to find YAML file for ${vnfd}!"
+      exit 1
+   fi
+   vnfdIdentifier=`grep "^  id:" ${vnfdYamlName} | tr -d " \t\n" | sed -e "s/id://"`
+   if [ "${vnfdIdentifier}" == "" ] ; then
+      echo >&2 "ERROR: Unable to find identifier for VNFD ${vnfd}!"
+      exit 1
+   fi
+   vnfdIdentifierArray[${vnfd}]="${vnfdIdentifier}"
+   vnfdArray[${vnfdIdentifier}]="${vnfd}"
+
+   echo "${vnfdArray[${vnfdIdentifier}]} <-> ${vnfdIdentifierArray[${vnfd}]}"
+done

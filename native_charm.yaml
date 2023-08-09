@@ -1,5 +1,5 @@
 # The following line tells "create-instance" the name of the NSD:
-#! NSD native_charm_ns
+#! NSD native_charm-ns
 
 vld:
   - name: mgmtnet
