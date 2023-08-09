@@ -29,7 +29,7 @@ vnfd:
           execution-environment-list:
           - id: simple-ee
             juju:
-              charm: simple
+              charm: simple-native
               proxy: false
           initial-config-primitive:
           - name: touch

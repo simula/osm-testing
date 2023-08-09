@@ -243,7 +243,7 @@ FILE(MAKE_DIRECTORY ${charmsOutputDirectory})
 
 FOREACH(charmName IN LISTS CHARM_SOURCE_LIST)
    GET_FILENAME_COMPONENT(charmSourceDirectory ${CHARMS_SOURCE_DIRECTORY}/${charmName} ABSOLUTE)
-   GET_FILENAME_COMPONENT(charmBuildDirectory  ${charmsOutputDirectory}/${charmName}  ABSOLUTE)
+   GET_FILENAME_COMPONENT(charmBuildDirectory  ${charmsOutputDirectory}/${charmName}   ABSOLUTE)
    EXECUTE_PROCESS(COMMAND git ls-files ${charmSourceDirectory}
                    COMMAND tr "\n" ";"
                    COMMAND sed -e "s/;$//g"
@@ -254,28 +254,26 @@ FOREACH(charmName IN LISTS CHARM_SOURCE_LIST)
 
    # ------ Charm using Operator Mode ---------------------------------------
    IF(EXISTS "${charmSourceDirectory}/mod/operator" AND IS_DIRECTORY "${charmSourceDirectory}/mod/operator")
+      MESSAGE("Charm ${charmName} is using Operator Mode!")
       ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
-                        COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                        COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                        COMMAND rm -rf ${charmBuildDirectory}
-                        COMMAND cp -a ${charmSourceDirectory} ${charmBuildDirectory}
-                        COMMAND touch ${charmBuildTimestampFile}
-                        WORKING_DIRECTORY ${charmSourceDirectory}
-                        DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
+                         COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                         COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                         COMMAND rm -rf ${charmBuildDirectory}
+                         COMMAND cp -a ${charmSourceDirectory} ${charmBuildDirectory}
+                         COMMAND touch ${charmBuildTimestampFile}
+                         WORKING_DIRECTORY ${charmSourceDirectory}
+                         DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
 
    # ------ Charm using deprecated "charm build" ----------------------------
    ELSE()
+      MESSAGE("Charm ${charmName} is using DEPRECATED \"charm build ...\"!")
       ADD_CUSTOM_COMMAND(OUTPUT  ${charmBuildTimestampFile}
-                        COMMAND echo cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                        COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
-                        COMMAND rm -rf ${charmBuildDirectory}
-                        COMMAND pwd
-                        COMMAND echo "env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}"
-                        COMMAND env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
-                        COMMAND echo "---"
-                        COMMAND touch ${charmBuildTimestampFile}
-                        WORKING_DIRECTORY ${charmSourceDirectory}
-                        DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
+                         COMMAND cp ${vduHelperFiles} ${charmSourceDirectory}/reactive
+                         COMMAND rm -rf ${charmBuildDirectory}
+                         COMMAND env CHARM_LAYERS_DIR=${CHARMS_BASELAYERS_DIRECTORY} ${CHARM} build --build-dir ${charmsOutputDirectory}
+                         COMMAND touch ${charmBuildTimestampFile}
+                         WORKING_DIRECTORY ${charmSourceDirectory}
+                         DEPENDS ${charmInputFiles} ${vduHelperFiles} ${allYAMLsChecked})
    ENDIF()
    ADD_CUSTOM_TARGET(${generate_charmBuildTimestampFile} DEPENDS ${charmBuildTimestampFile})
 
