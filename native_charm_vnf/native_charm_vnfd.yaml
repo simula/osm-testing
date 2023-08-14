@@ -52,15 +52,15 @@ vnfd:
   mgmt-cp: vnf-mgmt-ext
   product-name: native_charm-vnf
   sw-image-desc:
-  - id: ubuntu18.04
-    image: ubuntu18.04
-    name: ubuntu18.04
-  - id: ubuntu18.04-azure
-    name: ubuntu18.04-azure
-    image: Canonical:UbuntuServer:18.04-LTS:latest
+  - id: ubuntu22.04
+    image: ubuntu22.04
+    name: ubuntu22.04
+  - id: ubuntu22.04-azure
+    name: ubuntu22.04-azure
+    image: Canonical:UbuntuServer:22.04-LTS:latest
     vim-type: azure
-  - id: ubuntu18.04-gcp
-    name: ubuntu18.04-gcp
+  - id: ubuntu22.04-gcp
+    name: ubuntu22.04-gcp
     image: ubuntu-os-cloud:image-family:ubuntu-1804-lts
     vim-type: gcp
   vdu:
@@ -80,10 +80,10 @@ vnfd:
         virtual-interface:
           type: PARAVIRT
     name: mgmtVM
-    sw-image-desc: ubuntu18.04
+    sw-image-desc: ubuntu22.04
     alternative-sw-image-desc:
-    - ubuntu18.04-azure
-    - ubuntu18.04-gcp
+    - ubuntu22.04-azure
+    - ubuntu22.04-gcp
     virtual-compute-desc: mgmtVM-compute
     virtual-storage-desc:
     - mgmtVM-storage

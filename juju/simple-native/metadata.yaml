@@ -20,6 +20,4 @@ summary: A simple native charm
 description: |
   Simple native charm
 series:
-  - bionic
-  - xenial
-  - focal
+  - jammy
