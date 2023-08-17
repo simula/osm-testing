@@ -43,7 +43,7 @@ PROJECT(SimulaMet-OAI-EPC C)
 EXECUTE_PROCESS(COMMAND git ls-files
                 COMMAND cut -d/ -f1
                 COMMAND sort -u
-                COMMAND grep "nsd$\\|ns$"
+                COMMAND grep "nsd$\\|[^o]ns$"
                 COMMAND tr "\n" ";"
                 COMMAND sed -e "s/;$//g"
                 OUTPUT_VARIABLE NSD_LIST OUTPUT_STRIP_TRAILING_WHITESPACE)
